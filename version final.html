@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>QUANTIC // V6.0_W98_EDITION</title>
+    <style>
+        body { 
+            margin: 0; 
+            background: #000080; 
+            color: #000; 
+            font-family: 'MS Sans Serif', 'Arial', sans-serif; overflow: hidden; 
+            display: flex; height: 100vh; width: 100vw; box-sizing: border-box;
+            border: 2px solid; border-color: #fff #808080 #808080 #fff;
+        }
+
+        #gui-left, #gui-right { 
+            width: 280px; display: flex; flex-direction: column; padding: 5px;
+            z-index: 100; font-size: 11px; flex-shrink: 0;
+            background-color: #FFFFFF;
+            border-right: 2px solid #808080;
+        }
+        
+        #gui-right { 
+            border-right: none; 
+            border-left: 2px solid #808080;
+            justify-content: flex-start; 
+        }
+
+        #main-view-wrapper {
+            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+            position: relative; padding: 10px; 
+            background-color: #000080;
+        }
+
+        #canvas-frame {
+            width: 88vmin; height: 88vmin; 
+            background: #FFFFFF; 
+            display: flex; align-items: center; justify-content: center;
+            border: 3px solid; border-color: #808080 #dfdfdf #dfdfdf #808080;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.2);
+            min-width: 320px; min-height: 320px;
+        }
+
+        #viewport-container {
+            width: 85vmin; height: 85vmin; border-radius: 50%; 
+            border: 3px solid; border-color: #555 #dfdfdf #dfdfdf #555;
+            box-shadow: inset 2px 2px 6px #000;
+            background: radial-gradient(circle, #1a1a1a 0%, #000 85%);
+            position: relative; overflow: hidden;
+            min-width: 300px; min-height: 300px; box-sizing: border-box;
+        }
+
+        #viewport-container::after {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; background: radial-gradient(circle, transparent 70%, rgba(0,0,0,0.9) 100%);
+            border-radius: 50%;
+        }
+
+        .window { 
+            background: #C0C0C0; margin-bottom: 8px; border: 2px solid;
+            border-color: #fff #808080 #808080 #fff; box-shadow: 1px 1px 1px #000;
+            padding: 2px;
+        }
+
+        .title-bar {
+            height: 18px; background: linear-gradient(90deg, #000080, #1084D0);
+            display: flex; align-items: center; padding: 1px 3px; margin-bottom: 8px; 
+            color: #fff; font-weight: bold; text-transform: uppercase;
+        }
+
+        .row { margin: 0 8px 8px 8px; }
+        .label-container { display: flex; justify-content: space-between; margin-bottom: 2px; }
+        .val-display { 
+            color: #000; font-family: monospace; padding: 0 3px; border: 1px solid; 
+            border-color: #808080 #fff #fff #808080; background: #fff; width: 40px; text-align: right; 
+        }
+        
+        select, input[type="file"] { 
+            width: 100%; background: #fff; border: 2px solid; 
+            border-color: #808080 #fff #fff #808080; font-size: 10px;
+        }
+
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 15px; background: transparent; }
+        input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #808080; border: 1px solid #000; }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%;
+            border: 2px solid; border-color: #fff #808080 #808080 #fff; 
+            box-shadow: 1px 1px 0 #000; margin-top: -6px; cursor: pointer;
+        }
+        #depthScale::-webkit-slider-thumb, #pixelSize::-webkit-slider-thumb { background: #f00; }
+        #offsetX::-webkit-slider-thumb { background: #ff0; border-color: #808000; }
+        #offsetY::-webkit-slider-thumb, #brightness::-webkit-slider-thumb, #contrast::-webkit-slider-thumb { background: #00f; }
+
+        .behavior-container { 
+            position: relative; width: 100%; height: 160px; 
+            display: flex; align-items: center; justify-content: center; 
+        }
+        .atom-lines { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .line-pg { position: absolute; top: 35px; left: 50%; width: 2px; height: 40px; background: repeating-linear-gradient(#444, #444 2px, transparent 2px, transparent 4px); transform: translateX(-50%); }
+        .line-ng { position: absolute; bottom: 35px; left: 60px; width: 60px; height: 2px; background: repeating-linear-gradient(90deg, #444, #444 2px, transparent 2px, transparent 4px); transform: rotate(-30deg); transform-origin: left center; }
+        .line-eg { position: absolute; bottom: 35px; right: 60px; width: 60px; height: 2px; background: repeating-linear-gradient(90deg, #444, #444 2px, transparent 2px, transparent 4px); transform: rotate(30deg); transform-origin: right center; }
+
+        .atom-btn { 
+            position: absolute; width: 42px; height: 42px; border-radius: 50%;
+            border: 2px solid; font-weight: bold; cursor: pointer; box-shadow: 1px 1px 0 #000;
+            font-family: 'MS Sans Serif', 'Courier New', monospace; font-size: 16px; z-index: 2;
+        }
+        .atom-btn.active { box-shadow: inset 2px 2px 2px #000; border-color: #800000; }
+        #btn-proton { background: #f00; color: #fff; top: 10px; left: 50%; transform: translateX(-50%); }
+        #btn-neutron { background: #00f; color: #fff; bottom: 10px; left: 35px; }
+        #btn-electron { background: #ff0; color: #000; bottom: 10px; right: 35px; }
+        #btn-gravity-well { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 32px; height: 32px; background: #C0C0C0; border: 2px solid;
+            border-color: #fff #808080 #808080 #fff; font-weight: bold; cursor: pointer; 
+            box-shadow: 1px 1px 0 #000; z-index: 3;
+        }
+        #btn-gravity-well.active { background: #00ff00; }
+
+        #bigbang-container { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 5px; margin-bottom: 5px; gap: 10px; }
+        button#resetAll, button#captureBtn { 
+            width: 160px; height: 32px; border: 2px solid; cursor: pointer; font-weight: bold; font-size: 12px; box-shadow: 1px 1px 0 #000;
+        }
+        button#resetAll { background: #f00; color: #fff; border-color: #ffcccc #800000 #800000 #ffcccc; }
+        button#captureBtn { background: #C0C0C0; color: #000; border-color: #fff #808080 #808080 #fff; }
+
+        #os-status-window { margin-top: auto; margin-bottom: 5px; }
+        #quantic-identity { padding: 12px; display: flex; align-items: center; justify-content: center; }
+        
+        .logo-container {
+            width: 48px; height: 48px;
+            display: flex; align-items: center; justify-content: center;
+            background: #fff; border: 1px solid #808080; box-shadow: inset 1px 1px 2px #000;
+        }
+        
+        .logo-img { width: 40px; height: 40px; image-rendering: pixelated; object-fit: contain; }
+
+        .palette-preview { display: flex; height: 6px; margin: 2px 8px 8px 8px; border: 1px solid #808080; background: #fff; }
+        .swatch { flex: 1; border-right: 1px solid #000; }
+        .locked { opacity: 0.5; pointer-events: none; }
+
+        .white-module {
+            background-color: #000; border: 2px solid;
+            border-color: #808080 #fff #fff #808080; 
+            height: 140px; margin: 0 8px 8px 8px; box-sizing: border-box;
+            display: flex; align-items: center; justify-content: center;
+            position: relative; overflow: hidden;
+        }
+        #spectrum-canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+        
+        .stretch-window { display: flex; flex-direction: column; margin-bottom: 8px; }
+    </style>
+</head>
+<body oncontextmenu="return false;">
+
+<div id="gui-left">
+    <div class="window">
+        <div class="title-bar"><div>ATOM</div></div>
+        <div class="behavior-container">
+            <div class="atom-lines">
+                <div class="line-pg"></div><div class="line-ng"></div><div class="line-eg"></div>
+            </div>
+            <button id="btn-proton" class="atom-btn">P</button>
+            <button id="btn-neutron" class="atom-btn">N</button>
+            <button id="btn-electron" class="atom-btn">E</button>
+            <button id="btn-gravity-well">G</button>
+        </div>
+    </div>
+
+    <div class="window">
+        <div class="title-bar"><div>INTERFERENCES</div></div>
+        <div class="row"><div class="label-container"><label>Mass:</label><span class="val-display" id="v-size">3.5</span></div><input type="range" id="pixelSize" min="1" max="15" step="0.2" value="3.5"></div>
+        <div class="row"><div class="label-container"><label>Decay:</label><span class="val-display" id="v-bright">0.00</span></div><input type="range" id="brightness" min="0.0" max="1.0" step="0.01" value="0"></div>
+        <div class="row"><div class="label-container"><label>Density:</label><span class="val-display" id="v-contrast">1.00</span></div><input type="range" id="contrast" min="1.0" max="10.0" step="0.01" value="1"></div>
+    </div>
+
+    <div class="window" id="mod-gravity">
+        <div class="title-bar"><div>GRAVITY</div></div>
+        <div class="row"><div class="label-container"><label>Tension:</label><span class="val-display" id="v-depth">150</span></div><input type="range" id="depthScale" min="-400" max="400" value="150"></div>
+        <div class="row"><div class="label-container"><label>X-Pull:</label><span class="val-display" id="v-offsetX">0</span></div><input type="range" id="offsetX" min="-333" max="333" value="0"></div>
+        <div class="row"><div class="label-container"><label>Y-Pull:</label><span class="val-display" id="v-offsetY">0</span></div><input type="range" id="offsetY" min="-333" max="333" value="0"></div>
+    </div>
+    
+    <div class="window" id="os-status-window">
+        <div class="title-bar"><div>QUANTIC</div></div>
+        <div id="quantic-identity">
+            <div class="logo-container">
+                <img src="logo.png" alt="Logo" class="logo-img">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="main-view-wrapper">
+    <div id="canvas-frame">
+        <div id="viewport-container"></div>
+    </div>
+</div>
+
+<div id="gui-right">
+    <div class="window">
+        <div class="title-bar"><div>CORE</div></div>
+        <div class="row"><label>Stream:</label><input type="file" id="imageInput" accept="image/*"></div>
+        <div class="row"><label>Shape:</label><select id="shapeSelect"><option value="0">Square</option><option value="1">Circle</option><option value="2">Triangle</option></select></div>
+        <div class="row"><label>Spectrum:</label><select id="paletteSelect"><option value="default">None</option><option value="mono">MONO</option><option value="atari">ATARI</option><option value="gameboy">GAMEBOY</option><option value="pico">PICO</option></select></div>
+        <div id="palettePreview" class="palette-preview"></div>
+    </div>
+
+    <div class="window stretch-window">
+        <div class="title-bar"><div>DATA</div></div>
+        <div class="white-module">
+            <canvas id="spectrum-canvas"></canvas>
+        </div>
+    </div>
+
+    <div id="bigbang-container">
+        <button id="captureBtn">PHOTON</button>
+        <button id="resetAll">BIG BANG</button>
+    </div>
+</div>
+
+<script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+
+<script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    let scene, camera, renderer, controls, mesh, viewport;
+    let isRightClick = false, atomActive = false, adnActive = false, electronActive = false, gravityActive = false;
+    let atomAlpha = 0.0, adnAlpha = 0.0, electronAlpha = 0.0, gravityAlpha = 0.0;
+    let currentBright = 0.0, currentContrast = 1.0;
+    let mouse = new THREE.Vector2(0,0);
+    const textureLoader = new THREE.TextureLoader();
+    const initialCamPos = new THREE.Vector3(0, 0, 750);
+    const initialTarget = new THREE.Vector3(0, 0, 0);
+
+    const PALETTES = {
+        default: [new THREE.Vector3(1,1,1), new THREE.Vector3(0.5,0.5,0.5), new THREE.Vector3(0,0,0)],
+        mono: [new THREE.Vector3(0.15,0.15,0.15), new THREE.Vector3(0.32,0.32,0.32), new THREE.Vector3(0.49,0.49,0.49), new THREE.Vector3(0.66,0.66,0.66), new THREE.Vector3(0.83,0.83,0.83), new THREE.Vector3(1,1,1)],
+        atari: [new THREE.Vector3(0.01, 0.42, 0.98), new THREE.Vector3(0.91, 0.18, 0.07), new THREE.Vector3(0.13, 0.59, 0.40), new THREE.Vector3(0.94, 0.80, 0.12), new THREE.Vector3(1.0, 1.0, 1.0)],
+        gameboy: [new THREE.Vector3(0.06, 0.22, 0.06), new THREE.Vector3(0.19, 0.38, 0.19), new THREE.Vector3(0.55, 0.67, 0.06), new THREE.Vector3(0.61, 0.73, 0.06)],
+        pico: [new THREE.Vector3(0,0,0), new THREE.Vector3(0.11,0.16,0.32), new THREE.Vector3(0.49,0.14,0.32), new THREE.Vector3(0,0.52,0.31), new THREE.Vector3(1,0.64,0), new THREE.Vector3(1,1,1)]
+    };
+
+    const sCanvas = document.getElementById('spectrum-canvas');
+    const sCtx = sCanvas.getContext('2d');
+
+    function updateSpectrumNoise() {
+        const pKey = document.getElementById('paletteSelect').value;
+        const colors = (pKey === 'default') ? PALETTES.default : PALETTES[pKey];
+        if (sCanvas.width !== sCanvas.offsetWidth) {
+            sCanvas.width = sCanvas.offsetWidth / 4; 
+            sCanvas.height = sCanvas.offsetHeight / 4;
+        }
+        for (let x = 0; x < sCanvas.width; x += 2) {
+            for (let y = 0; y < sCanvas.height; y += 2) {
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                sCtx.fillStyle = `rgb(${color.x * 255}, ${color.y * 255}, ${color.z * 255})`;
+                sCtx.fillRect(x, y, 2, 2);
+            }
+        }
+        setTimeout(() => requestAnimationFrame(updateSpectrumNoise), 60);
+    }
+
+    const vertexShader = `
+        varying vec2 vUv; varying float vBrightness; varying float vVisible; attribute float aIndex;
+        uniform sampler2D uTexture; uniform float uDepth; uniform vec2 uOffsetXY; uniform float uSize;
+        uniform float uBright; uniform float uContrast; uniform float uAssemble;
+        uniform float uAtomAlpha; uniform float uAdnAlpha; uniform float uElectronAlpha;
+        uniform float uGravityAlpha; uniform vec2 uMouse; uniform float uTime;
+        void main() {
+            vUv = uv; vec4 tex = texture2D(uTexture, vUv);
+            vec3 rgb = (tex.rgb - 0.5) * uContrast + 0.5 + uBright;
+            vBrightness = clamp(dot(rgb, vec3(0.299, 0.587, 0.114)), 0.0, 1.0);
+            vVisible = vBrightness > 0.02 ? 1.0 : 0.0;
+            vec3 pos = position; 
+            pos.x += vBrightness * uOffsetXY.x; pos.y += vBrightness * uOffsetXY.y; pos.z += vBrightness * uDepth;
+            vec3 atomPos = pos + vec3(cos(uTime * 1.2 + aIndex * 10.0) * 8.0, sin(uTime * 1.2 + aIndex * 10.0) * 8.0, 0.0);
+            float waveZ = sin(length(position.xy) * 0.03 - uTime * 2.5) * 45.0 + cos(aIndex * 10.0 + uTime * 1.5) * 10.0;
+            vec3 adnPos = pos + vec3(0.0, 0.0, waveZ);
+            float wavePartZ = sin(uTime * 4.0 + length(position.xy) * 0.04 + aIndex * 5.0) * 40.0;
+            vec3 electronPos = pos + vec3(cos(uTime * 2.5 + aIndex * 10.0) * 15.0, sin(uTime * 2.5 + aIndex * 10.0) * 15.0, wavePartZ);
+            vec3 behaviorPos = mix(mix(mix(pos, atomPos, uAtomAlpha), adnPos, uAdnAlpha), electronPos, uElectronAlpha);
+            vec3 gTarget = vec3(uMouse.x * 450.0, uMouse.y * 450.0, 0.0);
+            vec3 gravityPos = behaviorPos + ((gTarget - behaviorPos) * (1.0 - smoothstep(0.0, 450.0, length(gTarget - behaviorPos))) * 0.20);
+            vec3 finalPos = mix(mix(behaviorPos, gravityPos, uGravityAlpha), position, clamp(uAssemble * 1.2 - (vBrightness * 0.4), 0.0, 1.0));
+            vec4 mvPos = modelViewMatrix * vec4(finalPos, 1.0);
+            gl_PointSize = uSize * (400.0 / -mvPos.z); gl_Position = projectionMatrix * mvPos;
+        }
+    `;
+
+    const fragmentShader = `
+        varying vec2 vUv; varying float vBrightness; varying float vVisible;
+        uniform sampler2D uTexture; uniform vec3 uPalette[16]; uniform int uPaletteSize;
+        uniform int uShape; uniform float uBright; uniform float uContrast;
+        void main() {
+            if (vVisible < 0.5) discard;
+            vec2 cxy = 2.0 * gl_PointCoord - 1.0;
+            if (uShape == 1) { if (dot(cxy, cxy) > 1.0) discard; } 
+            else if (uShape == 2) { if (cxy.y > 0.5 || -cxy.x - cxy.y > 0.5 || cxy.x - cxy.y > 0.5) discard; }
+            vec3 finalColor = (uPaletteSize > 0) ? uPalette[int(floor(vBrightness * float(uPaletteSize - 1)))] : clamp((texture2D(uTexture, vUv).rgb - 0.5) * uContrast + 0.5 + uBright, 0.0, 1.0);
+            gl_FragColor = vec4(finalColor, 1.0);
+        }
+    `;
+
+    init();
+
+    function init() {
+        viewport = document.getElementById('viewport-container');
+        scene = new THREE.Scene();
+        camera = new THREE.PerspectiveCamera(60, 1, 1, 5000); 
+        camera.position.copy(initialCamPos);
+        renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, preserveDrawingBuffer: true });
+        renderer.setSize(viewport.clientWidth, viewport.clientHeight);
+        viewport.appendChild(renderer.domElement);
+        controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true; controls.enablePan = false;
+
+        viewport.addEventListener('mousemove', (e) => {
+            const rect = viewport.getBoundingClientRect();
+            mouse.x = THREE.MathUtils.lerp(mouse.x, ((e.clientX - rect.left) / rect.width) * 2 - 1, 0.15);
+            mouse.y = THREE.MathUtils.lerp(mouse.y, -((e.clientY - rect.top) / rect.height) * 2 + 1, 0.15);
+        });
+
+        viewport.addEventListener('mousedown', (e) => { if(e.button === 2) isRightClick = true; });
+        window.addEventListener('mouseup', (e) => { if(e.button === 2) isRightClick = false; });
+
+        document.getElementById('btn-gravity-well').onclick = (e) => {
+            gravityActive = !gravityActive; e.target.classList.toggle('active', gravityActive);
+            document.getElementById('mod-gravity').classList.toggle('locked', gravityActive);
+        };
+
+        const bts = {
+            'btn-proton': () => {atomActive=!atomActive;adnActive=false;electronActive=false;}, 
+            'btn-neutron': () => {adnActive=!adnActive;atomActive=false;electronActive=false;}, 
+            'btn-electron': () => {electronActive=!electronActive;atomActive=false;adnActive=false;}
+        };
+        Object.keys(bts).forEach(id => document.getElementById(id).onclick = (e) => { 
+            bts[id](); 
+            document.querySelectorAll('.atom-btn').forEach(b => b.classList.remove('active')); 
+            if(atomActive||adnActive||electronActive) e.target.classList.add('active'); 
+        });
+
+        document.getElementById('imageInput').onchange = (e) => { if(e.target.files[0]) textureLoader.load(URL.createObjectURL(e.target.files[0]), createMesh); };
+        document.getElementById('paletteSelect').onchange = updatePaletteUI;
+        document.getElementById('resetAll').onclick = bigBangReset;
+        
+        document.getElementById('captureBtn').onclick = () => {
+            const canvas = renderer.domElement;
+            const captureCanvas = document.createElement('canvas');
+            captureCanvas.width = canvas.width; captureCanvas.height = canvas.height;
+            const ctx = captureCanvas.getContext('2d');
+            ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, captureCanvas.width, captureCanvas.height);
+            ctx.drawImage(canvas, 0, 0);
+            const link = document.createElement('a');
+            link.download = 'quantic_render.png';
+            link.href = captureCanvas.toDataURL('image/png');
+            link.click();
+        };
+        
+        window.addEventListener('resize', () => { renderer.setSize(viewport.clientWidth, viewport.clientHeight); });
+        textureLoader.load('welcome.JPG', createMesh, undefined, () => {
+            const geometry = new THREE.PlaneGeometry(600, 600, 2, 2);
+            mesh = new THREE.Points(geometry, new THREE.PointsMaterial({color: 0xFF00FF, size: 10}));
+            scene.add(mesh);
+        });
+        updatePaletteUI(); updateSpectrumNoise(); animate();
+    }
+
+    function bigBangReset() {
+        const d = document;
+        d.getElementById('depthScale').value = 150;
+        d.getElementById('offsetX').value = 0; d.getElementById('offsetY').value = 0;
+        d.getElementById('pixelSize').value = 3.5; d.getElementById('brightness').value = 0.0;
+        d.getElementById('contrast').value = 1.0; d.getElementById('shapeSelect').value = 0;
+        d.getElementById('paletteSelect').value = 'default';
+        updatePaletteUI();
+        atomActive = false; adnActive = false; electronActive = false; gravityActive = false;
+        document.querySelectorAll('.atom-btn, #btn-gravity-well').forEach(b => b.classList.remove('active'));
+        document.getElementById('mod-gravity').classList.remove('locked');
+        isRightClick = true; setTimeout(() => isRightClick = false, 1500);
+    }
+
+    function createMesh(tex) {
+        if (mesh) scene.remove(mesh);
+        const aspect = tex.image.height / tex.image.width;
+        const geometry = new THREE.PlaneGeometry(600, 600 * aspect, 256, Math.floor(256 * aspect));
+        const count = geometry.attributes.position.count;
+        const indices = new Float32Array(count);
+        for(let i=0; i<count; i++) indices[i] = Math.random();
+        geometry.setAttribute('aIndex', new THREE.BufferAttribute(indices, 1));
+        mesh = new THREE.Points(geometry, new THREE.ShaderMaterial({
+            uniforms: {
+                uTexture: { value: tex }, uDepth: { value: 150 }, uOffsetXY: { value: new THREE.Vector2(0, 0) },
+                uSize: { value: 3.5 }, uBright: { value: 0.0 }, uContrast: { value: 1.0 },
+                uPalette: { value: new Array(16).fill(new THREE.Vector3()) }, uPaletteSize: { value: 0 },
+                uShape: { value: 0 }, uAssemble: { value: 0.0 }, uTime: { value: 0 },
+                uAtomAlpha: { value: 0 }, uAdnAlpha: { value: 0 }, uElectronAlpha: { value: 0 },
+                uGravityAlpha: { value: 0 }, uMouse: { value: mouse }
+            }, vertexShader, fragmentShader, transparent: true
+        }));
+        scene.add(mesh);
+    }
+
+    function updatePaletteUI() {
+        const pKey = document.getElementById('paletteSelect').value;
+        const preview = document.getElementById('palettePreview');
+        preview.innerHTML = '';
+        if(pKey !== 'default') PALETTES[pKey].forEach(color => {
+            const div = document.createElement('div'); div.className = 'swatch';
+            div.style.backgroundColor = `rgb(${color.x*255},${color.y*255},${color.z*255})`;
+            preview.appendChild(div);
+        });
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        if (mesh && mesh.material.uniforms) {
+            const u = mesh.material.uniforms; const d = document;
+            u.uTime.value += 0.02;
+
+            // --- Lógica Integrada de Brillo y Contraste de Versión 6.2 ---
+            let tB = parseFloat(d.getElementById('brightness').value); 
+            let tC = parseFloat(d.getElementById('contrast').value);
+            
+            // Limitadores de saturación lógica según archivo 6.2
+            if (tB >= 1.0 && tC > 3.0) tC = 3.0; 
+            if (tC < 3.0 && tB > 0) tB = 0;
+            
+            // Interpolación fluida
+            currentBright = THREE.MathUtils.lerp(currentBright, tB, 0.1); 
+            currentContrast = THREE.MathUtils.lerp(currentContrast, tC, 0.1);
+            
+            u.uBright.value = currentBright; 
+            u.uContrast.value = currentContrast;
+            // ---------------------------------------------------------------------
+            
+            if(gravityActive) {
+                u.uOffsetXY.value.x = THREE.MathUtils.lerp(u.uOffsetXY.value.x, mouse.x * 333, 0.05);
+                u.uOffsetXY.value.y = THREE.MathUtils.lerp(u.uOffsetXY.value.y, mouse.y * 333, 0.05);
+                u.uDepth.value = THREE.MathUtils.lerp(u.uDepth.value, (mouse.x - mouse.y) * 400, 0.05);
+            } else {
+                u.uOffsetXY.value.x = THREE.MathUtils.lerp(u.uOffsetXY.value.x, parseFloat(d.getElementById('offsetX').value), 0.1);
+                u.uOffsetXY.value.y = THREE.MathUtils.lerp(u.uOffsetXY.value.y, parseFloat(d.getElementById('offsetY').value), 0.1);
+                u.uDepth.value = THREE.MathUtils.lerp(u.uDepth.value, parseFloat(d.getElementById('depthScale').value), 0.1);
+            }
+            
+            atomAlpha = THREE.MathUtils.lerp(atomAlpha, atomActive ? 1.0 : 0.0, 0.08);
+            adnAlpha = THREE.MathUtils.lerp(adnAlpha, adnActive ? 1.0 : 0.0, 0.08);
+            electronAlpha = THREE.MathUtils.lerp(electronAlpha, electronActive ? 1.0 : 0.0, 0.08);
+            gravityAlpha = THREE.MathUtils.lerp(gravityAlpha, gravityActive ? 1.0 : 0.0, 0.1);
+            u.uAtomAlpha.value = atomAlpha; u.uAdnAlpha.value = adnAlpha; u.uElectronAlpha.value = electronAlpha; u.uGravityAlpha.value = gravityAlpha;
+            u.uAssemble.value = THREE.MathUtils.lerp(u.uAssemble.value, isRightClick ? 1.0 : 0.0, 0.02);
+            u.uSize.value = parseFloat(d.getElementById('pixelSize').value); 
+            u.uShape.value = parseInt(d.getElementById('shapeSelect').value);
+            const pk = d.getElementById('paletteSelect').value; 
+            u.uPaletteSize.value = pk === 'default' ? 0 : PALETTES[pk].length;
+            if(pk !== 'default') PALETTES[pk].forEach((v, i) => u.uPalette.value[i] = v);
+            
+            // Sync Displays
+            d.getElementById('v-offsetX').innerText = Math.round(u.uOffsetXY.value.x); 
+            d.getElementById('v-offsetY').innerText = Math.round(u.uOffsetXY.value.y); 
+            d.getElementById('v-depth').innerText = Math.round(u.uDepth.value);
+            d.getElementById('v-bright').innerText = u.uBright.value.toFixed(2); 
+            d.getElementById('v-contrast').innerText = u.uContrast.value.toFixed(2); 
+            d.getElementById('v-size').innerText = u.uSize.value.toFixed(1);
+            
+            if (isRightClick) { camera.position.lerp(initialCamPos, 0.02); controls.target.lerp(initialTarget, 0.02); }
+        }
+        controls.update(); renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
