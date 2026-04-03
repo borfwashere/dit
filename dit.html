@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>QUANTIC // V6.0_W98_EDITION_MOBILE</title>
     <style>
         body { 
@@ -16,7 +16,7 @@
 
         /* --- MOBILE CONTROLS --- */
         #mobile-nav {
-            display: none; /* Oculto en escritorio */
+            display: none; 
             position: fixed;
             bottom: 0;
             left: 0;
@@ -64,12 +64,13 @@
         }
 
         #main-view-wrapper {
-            flex-grow: 1; display: flex; align-items: center; justify-content: center;
+            flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
             position: relative; padding: 10px; 
             background-color: #000080;
+            overflow: hidden;
         }
 
-        /* --- ORIGINAL GUI ELEMENTS (KEEP LOGIC) --- */
+        /* --- ORIGINAL GUI ELEMENTS --- */
         #canvas-frame {
             width: 88vmin; height: 88vmin; 
             background: #FFFFFF; 
@@ -86,6 +87,7 @@
             background: radial-gradient(circle, #1a1a1a 0%, #000 85%);
             position: relative; overflow: hidden;
             min-width: 300px; min-height: 300px; box-sizing: border-box;
+            touch-action: none; 
         }
 
         #viewport-container::after {
@@ -156,11 +158,14 @@
         #btn-gravity-well.active { background: #00ff00; }
 
         #bigbang-container { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 5px; margin-bottom: 5px; gap: 10px; }
-        button#resetAll, button#captureBtn { 
+        
+        #mobile-action-container { display: none; margin-top: 10px; flex-direction: row; gap: 10px; z-index: 1001; }
+
+        button#resetAll, button#captureBtn, button#captureBtn-mobile, button#resetAll-mobile { 
             width: 160px; height: 32px; border: 2px solid; cursor: pointer; font-weight: bold; font-size: 12px; box-shadow: 1px 1px 0 #000;
         }
-        button#resetAll { background: #f00; color: #fff; border-color: #ffcccc #800000 #800000 #ffcccc; }
-        button#captureBtn { background: #C0C0C0; color: #000; border-color: #fff #808080 #808080 #fff; }
+        button#resetAll, button#resetAll-mobile { background: #f00; color: #fff; border-color: #ffcccc #800000 #800000 #ffcccc; }
+        button#captureBtn, button#captureBtn-mobile { background: #C0C0C0; color: #000; border-color: #fff #808080 #808080 #fff; }
 
         #os-status-window { margin-top: auto; margin-bottom: 5px; }
         #quantic-identity { padding: 12px; display: flex; align-items: center; justify-content: center; }
@@ -188,40 +193,21 @@
         
         .stretch-window { display: flex; flex-direction: column; margin-bottom: 8px; }
 
-        /* --- ADAPTIVE CSS FOR MOBILE --- */
         @media (max-width: 768px) {
             body { flex-direction: column; padding-bottom: 52px; border: none; }
-            
             #mobile-nav { display: flex; }
-
             #gui-left, #gui-right {
-                position: fixed;
-                top: 0; left: 0;
-                width: 100vw;
-                height: calc(100vh - 50px);
-                z-index: 2000;
-                display: none; /* Controlado por JS */
-                overflow-y: auto;
-                border: none;
+                position: fixed; top: 0; left: 0; width: 100vw; height: calc(100vh - 50px);
+                z-index: 2000; display: none; overflow-y: auto; border: none;
             }
-
-            #main-view-wrapper {
-                width: 100vw;
-                height: calc(100vh - 50px);
-                padding: 0;
-            }
-
+            #main-view-wrapper { width: 100vw; height: calc(100vh - 50px); padding: 0; display: flex; }
             #canvas-frame {
-                width: 95vw; height: 95vw;
-                min-width: unset; min-height: unset;
+                width: 92vw; height: 92vw; min-width: unset; min-height: unset;
+                margin-top: -20px; 
             }
-
-            #viewport-container {
-                width: 90vw; height: 90vw;
-                min-width: unset; min-height: unset;
-            }
-
-            /* Mostrar panel activo */
+            #viewport-container { width: 88vw; height: 88vw; min-width: unset; min-height: unset; }
+            #mobile-action-container { display: flex; }
+            #bigbang-container { display: none; }
             .mobile-visible { display: flex !important; }
         }
     </style>
@@ -272,9 +258,13 @@
     </div>
 </div>
 
-<div id="main-view-wrapper">
+<div id="main-view-wrapper" class="mobile-visible">
     <div id="canvas-frame">
         <div id="viewport-container"></div>
+    </div>
+    <div id="mobile-action-container">
+        <button id="captureBtn-mobile">PHOTON</button>
+        <button id="resetAll-mobile">BIG BANG</button>
     </div>
 </div>
 
@@ -303,23 +293,14 @@
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
 
 <script>
-    // --- MOBILE TABS LOGIC ---
     function openTab(tabId, btn) {
         if (window.innerWidth > 768) return;
-        
-        // Ocultar todos
         document.getElementById('gui-left').classList.remove('mobile-visible');
         document.getElementById('gui-right').classList.remove('mobile-visible');
         document.getElementById('main-view-wrapper').classList.remove('mobile-visible');
-        
-        // Desactivar botones
         document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        
-        // Mostrar seleccionado
         document.getElementById(tabId).classList.add('mobile-visible');
         btn.classList.add('active');
-
-        // Disparar resize para que Three.js se ajuste si es necesario
         window.dispatchEvent(new Event('resize'));
     }
 </script>
@@ -416,8 +397,23 @@
         renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true, preserveDrawingBuffer: true });
         renderer.setSize(viewport.clientWidth, viewport.clientHeight);
         viewport.appendChild(renderer.domElement);
+        
         controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true; controls.enablePan = false;
+        controls.enableDamping = true; 
+        controls.enablePan = false;
+        controls.enableZoom = true; 
+        
+        // CONFIGURACIÓN ZOOM MÓVIL (SÚPER AGRESIVA - NIVEL 10)
+        const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        if(isMobile) {
+            controls.zoomSpeed = 10.0;     // Velocidad multiplicada por 10
+            controls.dampingFactor = 0.5;  // Freno seco para mayor control
+        }
+
+        controls.touches = { 
+            ONE: THREE.TOUCH.ROTATE, 
+            TWO: THREE.TOUCH.DOLLY_PAN 
+        };
 
         const updateMouse = (e) => {
             const rect = viewport.getBoundingClientRect();
@@ -428,8 +424,7 @@
         };
 
         viewport.addEventListener('mousemove', updateMouse);
-        viewport.addEventListener('touchmove', (e) => { updateMouse(e); e.preventDefault(); }, {passive: false});
-
+        viewport.addEventListener('touchmove', (e) => { updateMouse(e); }, {passive: true});
         viewport.addEventListener('mousedown', (e) => { if(e.button === 2) isRightClick = true; });
         window.addEventListener('mouseup', (e) => { if(e.button === 2) isRightClick = false; });
 
@@ -451,9 +446,12 @@
 
         document.getElementById('imageInput').onchange = (e) => { if(e.target.files[0]) textureLoader.load(URL.createObjectURL(e.target.files[0]), createMesh); };
         document.getElementById('paletteSelect').onchange = updatePaletteUI;
-        document.getElementById('resetAll').onclick = bigBangReset;
         
-        document.getElementById('captureBtn').onclick = () => {
+        const triggerReset = () => bigBangReset();
+        document.getElementById('resetAll').onclick = triggerReset;
+        document.getElementById('resetAll-mobile').onclick = triggerReset;
+
+        const triggerCapture = () => {
             const canvas = renderer.domElement;
             const captureCanvas = document.createElement('canvas');
             captureCanvas.width = canvas.width; captureCanvas.height = canvas.height;
@@ -461,10 +459,12 @@
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, captureCanvas.width, captureCanvas.height);
             ctx.drawImage(canvas, 0, 0);
             const link = document.createElement('a');
-            link.download = 'quantic_render.png';
-            link.href = captureCanvas.toDataURL('image/png');
+            link.setAttribute('download', 'quantic_render.png');
+            link.setAttribute('href', captureCanvas.toDataURL('image/png').replace("image/png", "image/octet-stream"));
             link.click();
         };
+        document.getElementById('captureBtn').onclick = triggerCapture;
+        document.getElementById('captureBtn-mobile').onclick = triggerCapture;
         
         window.addEventListener('resize', () => { 
             if(viewport.clientWidth > 0) {
@@ -492,7 +492,7 @@
         updatePaletteUI();
         atomActive = false; adnActive = false; electronActive = false; gravityActive = false;
         document.querySelectorAll('.atom-btn, #btn-gravity-well').forEach(b => b.classList.remove('active'));
-        document.getElementById('mod-gravity').classList.remove('locked');
+        document.getElementById('mod-gravity').classList.remove('locked', false);
         isRightClick = true; setTimeout(() => isRightClick = false, 1500);
     }
 
@@ -533,19 +533,14 @@
         if (mesh && mesh.material.uniforms) {
             const u = mesh.material.uniforms; const d = document;
             u.uTime.value += 0.02;
-
             let tB = parseFloat(d.getElementById('brightness').value); 
             let tC = parseFloat(d.getElementById('contrast').value);
-            
             if (tB >= 1.0 && tC > 3.0) tC = 3.0; 
             if (tC < 3.0 && tB > 0) tB = 0;
-            
             currentBright = THREE.MathUtils.lerp(currentBright, tB, 0.1); 
             currentContrast = THREE.MathUtils.lerp(currentContrast, tC, 0.1);
-            
             u.uBright.value = currentBright; 
             u.uContrast.value = currentContrast;
-            
             if(gravityActive) {
                 u.uOffsetXY.value.x = THREE.MathUtils.lerp(u.uOffsetXY.value.x, mouse.x * 333, 0.05);
                 u.uOffsetXY.value.y = THREE.MathUtils.lerp(u.uOffsetXY.value.y, mouse.y * 333, 0.05);
@@ -555,7 +550,6 @@
                 u.uOffsetXY.value.y = THREE.MathUtils.lerp(u.uOffsetXY.value.y, parseFloat(d.getElementById('offsetY').value), 0.1);
                 u.uDepth.value = THREE.MathUtils.lerp(u.uDepth.value, parseFloat(d.getElementById('depthScale').value), 0.1);
             }
-            
             atomAlpha = THREE.MathUtils.lerp(atomAlpha, atomActive ? 1.0 : 0.0, 0.08);
             adnAlpha = THREE.MathUtils.lerp(adnAlpha, adnActive ? 1.0 : 0.0, 0.08);
             electronAlpha = THREE.MathUtils.lerp(electronAlpha, electronActive ? 1.0 : 0.0, 0.08);
@@ -567,14 +561,12 @@
             const pk = d.getElementById('paletteSelect').value; 
             u.uPaletteSize.value = pk === 'default' ? 0 : PALETTES[pk].length;
             if(pk !== 'default') PALETTES[pk].forEach((v, i) => u.uPalette.value[i] = v);
-            
             d.getElementById('v-offsetX').innerText = Math.round(u.uOffsetXY.value.x); 
             d.getElementById('v-offsetY').innerText = Math.round(u.uOffsetXY.value.y); 
             d.getElementById('v-depth').innerText = Math.round(u.uDepth.value);
             d.getElementById('v-bright').innerText = u.uBright.value.toFixed(2); 
             d.getElementById('v-contrast').innerText = u.uContrast.value.toFixed(2); 
             d.getElementById('v-size').innerText = u.uSize.value.toFixed(1);
-            
             if (isRightClick) { camera.position.lerp(initialCamPos, 0.02); controls.target.lerp(initialTarget, 0.02); }
         }
         controls.update(); renderer.render(scene, camera);
