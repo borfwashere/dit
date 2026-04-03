@@ -87,7 +87,7 @@
             background: radial-gradient(circle, #1a1a1a 0%, #000 85%);
             position: relative; overflow: hidden;
             min-width: 300px; min-height: 300px; box-sizing: border-box;
-            touch-action: none; 
+            touch-action: none; /* Crucial para OrbitControls en móvil */
         }
 
         #viewport-container::after {
@@ -159,6 +159,7 @@
 
         #bigbang-container { width: 100%; display: flex; flex-direction: column; align-items: center; margin-top: 5px; margin-bottom: 5px; gap: 10px; }
         
+        /* Contenedor móvil en VIEW */
         #mobile-action-container { display: none; margin-top: 10px; flex-direction: row; gap: 10px; z-index: 1001; }
 
         button#resetAll, button#captureBtn, button#captureBtn-mobile, button#resetAll-mobile { 
@@ -193,19 +194,25 @@
         
         .stretch-window { display: flex; flex-direction: column; margin-bottom: 8px; }
 
+        /* --- ADAPTIVE CSS FOR MOBILE --- */
         @media (max-width: 768px) {
             body { flex-direction: column; padding-bottom: 52px; border: none; }
             #mobile-nav { display: flex; }
+
             #gui-left, #gui-right {
                 position: fixed; top: 0; left: 0; width: 100vw; height: calc(100vh - 50px);
                 z-index: 2000; display: none; overflow-y: auto; border: none;
             }
+
             #main-view-wrapper { width: 100vw; height: calc(100vh - 50px); padding: 0; display: flex; }
+
             #canvas-frame {
                 width: 92vw; height: 92vw; min-width: unset; min-height: unset;
-                margin-top: -20px; 
+                margin-top: -20px; /* Ajuste para centrar mejor con los botones */
             }
+
             #viewport-container { width: 88vw; height: 88vw; min-width: unset; min-height: unset; }
+
             #mobile-action-container { display: flex; }
             #bigbang-container { display: none; }
             .mobile-visible { display: flex !important; }
@@ -403,13 +410,7 @@
         controls.enablePan = false;
         controls.enableZoom = true; 
         
-        // CONFIGURACIÓN ZOOM MÓVIL (SÚPER AGRESIVA - NIVEL 10)
-        const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-        if(isMobile) {
-            controls.zoomSpeed = 10.0;     // Velocidad multiplicada por 10
-            controls.dampingFactor = 0.5;  // Freno seco para mayor control
-        }
-
+        // CONFIGURACIÓN ZOOM MÓVIL
         controls.touches = { 
             ONE: THREE.TOUCH.ROTATE, 
             TWO: THREE.TOUCH.DOLLY_PAN 
@@ -458,6 +459,7 @@
             const ctx = captureCanvas.getContext('2d');
             ctx.fillStyle = '#000000'; ctx.fillRect(0, 0, captureCanvas.width, captureCanvas.height);
             ctx.drawImage(canvas, 0, 0);
+            
             const link = document.createElement('a');
             link.setAttribute('download', 'quantic_render.png');
             link.setAttribute('href', captureCanvas.toDataURL('image/png').replace("image/png", "image/octet-stream"));
@@ -492,7 +494,7 @@
         updatePaletteUI();
         atomActive = false; adnActive = false; electronActive = false; gravityActive = false;
         document.querySelectorAll('.atom-btn, #btn-gravity-well').forEach(b => b.classList.remove('active'));
-        document.getElementById('mod-gravity').classList.remove('locked', false);
+        document.getElementById('mod-gravity').classList.remove('locked');
         isRightClick = true; setTimeout(() => isRightClick = false, 1500);
     }
 
