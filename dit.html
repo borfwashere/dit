@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>QUANTIC // V6.0_W98_EDITION</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUANTIC // V6.0_W98_EDITION_MOBILE</title>
     <style>
         body { 
             margin: 0; 
@@ -13,6 +14,42 @@
             border: 2px solid; border-color: #fff #808080 #808080 #fff;
         }
 
+        /* --- MOBILE CONTROLS --- */
+        #mobile-nav {
+            display: none; /* Oculto en escritorio */
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: #C0C0C0;
+            border-top: 2px solid #fff;
+            z-index: 1000;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.5);
+        }
+
+        .nav-btn {
+            height: 35px;
+            flex: 1;
+            margin: 0 5px;
+            background: #C0C0C0;
+            border: 2px solid;
+            border-color: #fff #808080 #808080 #fff;
+            font-family: 'MS Sans Serif', sans-serif;
+            font-weight: bold;
+            font-size: 10px;
+            cursor: pointer;
+        }
+
+        .nav-btn.active {
+            border-color: #808080 #fff #fff #808080;
+            background: #d0d0d0;
+            padding-top: 2px;
+        }
+
+        /* --- LAYOUT STRUCTURE --- */
         #gui-left, #gui-right { 
             width: 280px; display: flex; flex-direction: column; padding: 5px;
             z-index: 100; font-size: 11px; flex-shrink: 0;
@@ -32,6 +69,7 @@
             background-color: #000080;
         }
 
+        /* --- ORIGINAL GUI ELEMENTS (KEEP LOGIC) --- */
         #canvas-frame {
             width: 88vmin; height: 88vmin; 
             background: #FFFFFF; 
@@ -149,9 +187,52 @@
         #spectrum-canvas { width: 100%; height: 100%; image-rendering: pixelated; }
         
         .stretch-window { display: flex; flex-direction: column; margin-bottom: 8px; }
+
+        /* --- ADAPTIVE CSS FOR MOBILE --- */
+        @media (max-width: 768px) {
+            body { flex-direction: column; padding-bottom: 52px; border: none; }
+            
+            #mobile-nav { display: flex; }
+
+            #gui-left, #gui-right {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100vw;
+                height: calc(100vh - 50px);
+                z-index: 2000;
+                display: none; /* Controlado por JS */
+                overflow-y: auto;
+                border: none;
+            }
+
+            #main-view-wrapper {
+                width: 100vw;
+                height: calc(100vh - 50px);
+                padding: 0;
+            }
+
+            #canvas-frame {
+                width: 95vw; height: 95vw;
+                min-width: unset; min-height: unset;
+            }
+
+            #viewport-container {
+                width: 90vw; height: 90vw;
+                min-width: unset; min-height: unset;
+            }
+
+            /* Mostrar panel activo */
+            .mobile-visible { display: flex !important; }
+        }
     </style>
 </head>
 <body oncontextmenu="return false;">
+
+<nav id="mobile-nav">
+    <button class="nav-btn" onclick="openTab('gui-left', this)">ATOM</button>
+    <button class="nav-btn active" onclick="openTab('main-view-wrapper', this)">VIEW</button>
+    <button class="nav-btn" onclick="openTab('gui-right', this)">CORE</button>
+</nav>
 
 <div id="gui-left">
     <div class="window">
@@ -220,6 +301,28 @@
 </div>
 
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
+
+<script>
+    // --- MOBILE TABS LOGIC ---
+    function openTab(tabId, btn) {
+        if (window.innerWidth > 768) return;
+        
+        // Ocultar todos
+        document.getElementById('gui-left').classList.remove('mobile-visible');
+        document.getElementById('gui-right').classList.remove('mobile-visible');
+        document.getElementById('main-view-wrapper').classList.remove('mobile-visible');
+        
+        // Desactivar botones
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        
+        // Mostrar seleccionado
+        document.getElementById(tabId).classList.add('mobile-visible');
+        btn.classList.add('active');
+
+        // Disparar resize para que Three.js se ajuste si es necesario
+        window.dispatchEvent(new Event('resize'));
+    }
+</script>
 
 <script type="module">
     import * as THREE from 'three';
@@ -316,11 +419,16 @@
         controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true; controls.enablePan = false;
 
-        viewport.addEventListener('mousemove', (e) => {
+        const updateMouse = (e) => {
             const rect = viewport.getBoundingClientRect();
-            mouse.x = THREE.MathUtils.lerp(mouse.x, ((e.clientX - rect.left) / rect.width) * 2 - 1, 0.15);
-            mouse.y = THREE.MathUtils.lerp(mouse.y, -((e.clientY - rect.top) / rect.height) * 2 + 1, 0.15);
-        });
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            mouse.x = THREE.MathUtils.lerp(mouse.x, ((clientX - rect.left) / rect.width) * 2 - 1, 0.15);
+            mouse.y = THREE.MathUtils.lerp(mouse.y, -((clientY - rect.top) / rect.height) * 2 + 1, 0.15);
+        };
+
+        viewport.addEventListener('mousemove', updateMouse);
+        viewport.addEventListener('touchmove', (e) => { updateMouse(e); e.preventDefault(); }, {passive: false});
 
         viewport.addEventListener('mousedown', (e) => { if(e.button === 2) isRightClick = true; });
         window.addEventListener('mouseup', (e) => { if(e.button === 2) isRightClick = false; });
@@ -358,7 +466,14 @@
             link.click();
         };
         
-        window.addEventListener('resize', () => { renderer.setSize(viewport.clientWidth, viewport.clientHeight); });
+        window.addEventListener('resize', () => { 
+            if(viewport.clientWidth > 0) {
+                camera.aspect = viewport.clientWidth / viewport.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(viewport.clientWidth, viewport.clientHeight); 
+            }
+        });
+
         textureLoader.load('welcome.JPG', createMesh, undefined, () => {
             const geometry = new THREE.PlaneGeometry(600, 600, 2, 2);
             mesh = new THREE.Points(geometry, new THREE.PointsMaterial({color: 0xFF00FF, size: 10}));
@@ -419,21 +534,17 @@
             const u = mesh.material.uniforms; const d = document;
             u.uTime.value += 0.02;
 
-            // --- Lógica Integrada de Brillo y Contraste de Versión 6.2 ---
             let tB = parseFloat(d.getElementById('brightness').value); 
             let tC = parseFloat(d.getElementById('contrast').value);
             
-            // Limitadores de saturación lógica según archivo 6.2
             if (tB >= 1.0 && tC > 3.0) tC = 3.0; 
             if (tC < 3.0 && tB > 0) tB = 0;
             
-            // Interpolación fluida
             currentBright = THREE.MathUtils.lerp(currentBright, tB, 0.1); 
             currentContrast = THREE.MathUtils.lerp(currentContrast, tC, 0.1);
             
             u.uBright.value = currentBright; 
             u.uContrast.value = currentContrast;
-            // ---------------------------------------------------------------------
             
             if(gravityActive) {
                 u.uOffsetXY.value.x = THREE.MathUtils.lerp(u.uOffsetXY.value.x, mouse.x * 333, 0.05);
@@ -457,7 +568,6 @@
             u.uPaletteSize.value = pk === 'default' ? 0 : PALETTES[pk].length;
             if(pk !== 'default') PALETTES[pk].forEach((v, i) => u.uPalette.value[i] = v);
             
-            // Sync Displays
             d.getElementById('v-offsetX').innerText = Math.round(u.uOffsetXY.value.x); 
             d.getElementById('v-offsetY').innerText = Math.round(u.uOffsetXY.value.y); 
             d.getElementById('v-depth').innerText = Math.round(u.uDepth.value);
