@@ -12,6 +12,7 @@
             font-family: 'MS Sans Serif', 'Arial', sans-serif; overflow: hidden; 
             display: flex; height: 100vh; width: 100vw; box-sizing: border-box;
             border: 2px solid; border-color: #fff #808080 #808080 #fff;
+            user-select: none; /* Previene selección de texto */
         }
 
         /* --- MOBILE CONTROLS --- */
@@ -300,6 +301,14 @@
 <script type="importmap">{ "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }</script>
 
 <script>
+    // --- SEGURIDAD ANTI-INSPECCIÓN ---
+    document.addEventListener('contextmenu', event => event.preventDefault());
+    document.onkeydown = function(e) {
+        if (e.keyCode == 123) return false; // F12
+        if (e.ctrlKey && e.shiftKey && (e.keyCode == 'I'.charCodeAt(0) || e.keyCode == 'J'.charCodeAt(0) || e.keyCode == 'C'.charCodeAt(0))) return false;
+        if (e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false; // Ver código fuente
+    };
+
     function openTab(tabId, btn) {
         if (window.innerWidth > 768) return;
         document.getElementById('gui-left').classList.remove('mobile-visible');
